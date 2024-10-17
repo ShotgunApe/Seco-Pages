@@ -1,27 +1,36 @@
 # source .venv/bin/activate
 # deactivate
 
-import aiohttp
-import asyncio
+import requests
 import json
+import os
+from dotenv import load_dotenv
 
-async def main():
-    headers = {
-        'X-GitHub-Api-Version': '2022-11-28'
-    }
+url = 'https://api.github.com/search/repositories?q=.github.io+in:name+created:2024-10-15..2024-10-16+pushed:>=2024-10-16&per_page=100&page=1'
+headers = {
+    'X-GitHub-Api-Version': '2022-11-28',
+    'Authorization': str(os.getenv('auth'))
+}
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get('https://api.github.com/search/repositories?q=.github.io+in:name+created:2024-10-01..2024-10-16+pushed:>=2024-10-01&per_page=100&page=1', headers = headers) as response:
+def main():
+    print("Obtaining Page:", url)
+    res = requests.get(url, headers = headers)
+    print("Status:", res.status_code)
 
-            print("Status:", response.status)
-            print("Content-type:", response.headers['content-type'])
+    output = res.json()
+    page = 1
 
-            file = json.loads(await response.text())
-            
-            print("Total Count:", file['total_count'])
+    while 'next' in res.links.keys():
+        print("Obtaining Page:", res.links['next']['url'])
+        res = requests.get(res.links['next']['url'], headers = headers)
+        print("Status:", res.status_code)
 
-            with open("output/git-pages.json", "w") as outfile:
-                outfile.write(json.dumps(file, indent = 4))
+        output = res.json()
+    
+        with open(f"output/git-pages-{page}.json", "w") as outfile:
+            outfile.write(json.dumps(output, indent = 4))
+        outfile.close()
+        page = page + 1
 
-
-asyncio.run(main())
+if __name__ == "__main__":
+    main()
