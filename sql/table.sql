@@ -1,2 +1,3 @@
 -- CREATE DATABASE Seco_Pages; -- only if database is not made
-select * from Test_Table
+USE Seco_Pages;
+select * from Test_Table;
